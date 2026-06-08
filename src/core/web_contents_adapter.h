@@ -36,6 +36,11 @@
 #include <memory>
 #include <optional>
 
+namespace content {
+class ScopedAccessibilityMode;
+}
+
+
 namespace blink {
 namespace web_pref {
 struct WebPreferences;
@@ -288,6 +293,11 @@ private:
     bool m_inspector = false;
     bool m_documentIsHandlingDrag = false;
     QPointer<QWebEngineUrlRequestInterceptor> m_requestInterceptor;
+#if QT_CONFIG(accessibility)
+    std::optional<std::unique_ptr<content::ScopedAccessibilityMode>> m_scopedAccessibilityMode;
+    std::optional<std::unique_ptr<content::ScopedAccessibilityMode>> m_webContentsScopedMode;
+#endif
+
 };
 
 } // namespace QtWebEngineCore

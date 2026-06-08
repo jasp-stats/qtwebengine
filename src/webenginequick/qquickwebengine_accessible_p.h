@@ -22,7 +22,7 @@
 QT_BEGIN_NAMESPACE
 class QQuickWebEngineView;
 
-class QQuickWebEngineViewAccessible : public QAccessibleObject
+class QQuickWebEngineViewAccessible : public QAccessibleObject, public QAccessibleTextInterface, public QAccessibleTableCellInterface
 {
 public:
     QQuickWebEngineViewAccessible(QQuickWebEngineView *o);
@@ -36,6 +36,37 @@ public:
     QAccessible::Role role() const override;
     QAccessible::State state() const override;
 
+    void *interface_cast(QAccessible::InterfaceType t) override;
+
+    void scrollToSubstring(int startIndex, int endIndex) override;
+   void setSelection(int selectionIndex, int startOffset, int endOffset) override;
+    void addSelection(int startOffset, int endOffset) override;
+    void removeSelection(int selectionIndex) override;
+    void setCursorPosition(int position) override;
+    QString attributes(int offset, int *startOffset, int *endOffset) const override;
+    QString textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    int offsetAtPoint(const QPoint &point) const override;
+    QRect characterRect(int offset) const override;
+    int selectionCount() const override;
+    void selection(int selectionIndex, int *startOffset, int *endOffset) const override;
+    int cursorPosition() const override;
+    int characterCount() const override;
+    QString text(int startOffset, int endOffset) const override;
+
+    bool isSelected() const override;
+    QList<QAccessibleInterface*> columnHeaderCells() const override;
+    QList<QAccessibleInterface*> rowHeaderCells() const override;
+
+    int columnIndex() const override;
+    int rowIndex() const override;
+    int columnExtent() const override;
+    int rowExtent() const override;
+    QAccessibleInterface *table() const override;
+
+    QAccessibleInterface *browserAccessible() const;
+
 private:
     QQuickWebEngineView *engineView() const;
 };
@@ -43,7 +74,7 @@ private:
 QT_END_NAMESPACE
 
 namespace QtWebEngineCore {
-class RenderWidgetHostViewQtDelegateQuickAccessible : public QAccessibleObject
+class RenderWidgetHostViewQtDelegateQuickAccessible : public QAccessibleObject, public QAccessibleTextInterface
 {
 public:
     RenderWidgetHostViewQtDelegateQuickAccessible(QObject *o, QQuickWebEngineView *view);
@@ -59,7 +90,27 @@ public:
     QAccessibleInterface *child(int index) const override;
     int indexOfChild(const QAccessibleInterface *) const override;
 
+    void *interface_cast(QAccessible::InterfaceType t) override;
+
+    void scrollToSubstring(int startIndex, int endIndex) override;
+  void setSelection(int selectionIndex, int startOffset, int endOffset) override;
+    void addSelection(int startOffset, int endOffset) override;
+    void removeSelection(int selectionIndex) override;
+    void setCursorPosition(int position) override;
+    QString attributes(int offset, int *startOffset, int *endOffset) const override;
+    QString textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    int offsetAtPoint(const QPoint &point) const override;
+    QRect characterRect(int offset) const override;
+    int selectionCount() const override;
+    void selection(int selectionIndex, int *startOffset, int *endOffset) const override;
+    int cursorPosition() const override;
+    int characterCount() const override;
+    QString text(int startOffset, int endOffset) const override;
+
 private:
+    QAccessibleInterface *browserAccessible() const;
     QQuickWebEngineViewAccessible *viewAccessible() const;
     QPointer<QQuickWebEngineView> m_view;
 };

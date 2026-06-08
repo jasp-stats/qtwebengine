@@ -2407,7 +2407,7 @@ void QQuickWebEngineView::componentComplete()
     // it is not possible to reference attached properties.
     QQmlContext *qmlContext = QQmlEngine::contextForObject(this);
     QQmlProperty role(this, QStringLiteral("Accessible.role"), qmlContext);
-    role.write(QAccessible::Grouping);
+    role.write(QAccessible::WebDocument);
 #endif // QT_CONFIG(accessibility)
 
     QTimer::singleShot(0, this, &QQuickWebEngineView::lazyInitialize);

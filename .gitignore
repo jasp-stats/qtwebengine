@@ -17,7 +17,8 @@ examples/webenginewidgets/contentmanipulation/contentmanipulation
 examples/webenginewidgets/contentmanipulation/contentmanipulation.app
 examples/webenginewidgets/simplebrowser/simplebrowser
 tests/quicktestbrowser/quicktestbrowser
-
+build/
+install/
 tests/**/tst_*
 !tests/**/tst_*.*
 
@@ -31,6 +32,10 @@ moc_*.cpp
 *.pak
 .uic
 .rcc
+
+# Build directories
+build/
+install/
 *.pyc
 .pch
 .obj

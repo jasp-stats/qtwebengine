@@ -5,6 +5,8 @@
 #include "accessibility_activation_observer.h"
 
 #include "content/browser/accessibility/browser_accessibility_state_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 
 using namespace Qt::StringLiterals;
@@ -32,8 +34,10 @@ AccessibilityActivationObserver::AccessibilityActivationObserver()
 {
     if (isAccessibilityEnabled()) {
         QAccessible::installActivationObserver(this);
-        if (QAccessible::isActive())
-            content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
+
+        content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
+        scoped_accessibility_mode_ =
+            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
     }
 }
 
@@ -46,7 +50,18 @@ void AccessibilityActivationObserver::accessibilityActiveChanged(bool active)
 {
     if (active) {
         scoped_accessibility_mode_ =
-            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
+
+        // When accessibility is enabled after startup, reload all WebContents pages.
+        // This ensures accessibility trees are created with proper accessibility support
+        // from the renderer side, and browser-side managers are properly initialized.
+        auto webContentsList = content::WebContentsImpl::GetAllWebContents();
+        for (auto *webContents : webContentsList) {
+            if (!webContents->IsBeingDestroyed() && !webContents->IsNeverComposited()) {
+                // Reload the page to trigger proper accessibility initialization
+                webContents->GetController().Reload(content::ReloadType::NORMAL, true);
+            }
+        }
     } else {
         scoped_accessibility_mode_.reset();
     }

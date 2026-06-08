@@ -79,6 +79,8 @@
 #if QT_CONFIG(accessibility)
 #include "browser_accessibility_qt.h"
 #include "ui/accessibility/platform/browser_accessibility_manager.h"
+#include "content/browser/accessibility/browser_accessibility_state_impl.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include <QtGui/qaccessible.h>
 #endif
 
@@ -470,6 +472,15 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
         create_params.initially_hidden = true;
         m_webContents = content::WebContents::Create(create_params);
     }
+
+#if QT_CONFIG(accessibility)
+    content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
+    m_scopedAccessibilityMode =
+        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
+    m_webContentsScopedMode =
+        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForWebContents(webContents(), ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
+    static_cast<content::WebContentsImpl*>(webContents())->SetAccessibilityMode(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
+#endif
 
     initializeRenderPrefs();
 
@@ -1043,13 +1054,24 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
     content::RenderFrameHostImpl *rfh = static_cast<content::RenderFrameHostImpl *>(m_webContents->GetPrimaryMainFrame());
     if (!rfh)
         return nullptr;
+
+    ui::AXMode mode = webContents()->GetAccessibilityMode();
+    if (!(mode.has_mode(ui::AXMode::kNativeAPIs))) {
+        content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
+        m_webContents->GetController().Reload(content::ReloadType::NORMAL, true);
+        return nullptr;
+    }
+
     ui::BrowserAccessibilityManager *manager = rfh->GetOrCreateBrowserAccessibilityManager();
-    if (!manager) // FIXME!
+    if (!manager)
         return nullptr;
     ui::BrowserAccessibility *acc = manager->GetFromAXNode(manager->GetRoot());
+    if (!acc)
+        return nullptr;
 
     return ui::toQAccessibleInterface(acc);
 }
+
 #endif // QT_CONFIG(accessibility)
 
 content::RenderFrameHost *WebContentsAdapter::renderFrameHostFromFrameId(quint64 frameId) const
@@ -1949,7 +1971,7 @@ quint64 WebContentsAdapter::mainFrameId() const
 #define CHECK_INITIALIZED_AND_VALID_FRAME(webengine_frame_id_variable, frame_tree_node_variable,   \
                                           return_value)                                            \
     CHECK_INITIALIZED(return_value);                                                               \
-    if (webengine_frame_id_variable == -1) /* kInvalidFrameId)*/                                   \
+    if (webengine_frame_id_variable == static_cast<quint64>(-1)) /* kInvalidFrameId)*/             \
         return return_value;                                                                       \
     auto *frame_tree_node_variable = content::FrameTreeNode::GloballyFindByID(                     \
             static_cast<content::FrameTreeNodeId>(webengine_frame_id_variable));                   \
