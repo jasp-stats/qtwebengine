@@ -6,12 +6,15 @@
 
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QAccessible>
 
 #include "api/qquickwebengineview_p.h"
 #include "api/qquickwebengineview_p_p.h"
 #include "web_contents_adapter.h"
+#include "browser_accessibility_qt.h"
 
 QT_BEGIN_NAMESPACE
+
 QQuickWebEngineViewAccessible::QQuickWebEngineViewAccessible(QQuickWebEngineView *o)
     : QAccessibleObject(o)
 {}
@@ -51,7 +54,7 @@ int QQuickWebEngineViewAccessible::childCount() const
 QAccessibleInterface *QQuickWebEngineViewAccessible::child(int index) const
 {
     if (index == 0 && isValid())
-        return engineView()->d_func()->adapter->browserAccessible();
+        return browserAccessible();
     return nullptr;
 }
 
@@ -69,13 +72,239 @@ QString QQuickWebEngineViewAccessible::text(QAccessible::Text) const
 
 QAccessible::Role QQuickWebEngineViewAccessible::role() const
 {
-    return QAccessible::Client;
+    return QAccessible::WebDocument;
 }
 
 QAccessible::State QQuickWebEngineViewAccessible::state() const
 {
     QAccessible::State s;
+    if (engineView() && engineView()->hasFocus())
+        s.focused = true;
     return s;
+}
+
+void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t)
+{
+    if (t == QAccessible::InterfaceType::Text)
+        return static_cast<QAccessibleTextInterface *>(this);
+    if (t == QAccessible::InterfaceType::TableCell)
+        return static_cast<QAccessibleTableCellInterface *>(this);
+    return nullptr;
+}
+
+QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
+{
+    if (!m_browserAccessibleCache && isValid()) {
+        auto *adapter = engineView()->d_func()->adapter;
+        if (adapter) {
+            m_browserAccessibleCache = adapter->browserAccessible();
+        }
+    }
+    return m_browserAccessibleCache;
+}
+
+void QQuickWebEngineViewAccessible::scrollToSubstring(int startIndex, int endIndex)
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->scrollToSubstring(startIndex, endIndex);
+        }
+    }
+}
+
+void QQuickWebEngineViewAccessible::setSelection(int selectionIndex, int startOffset, int endOffset)
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->setSelection(selectionIndex, startOffset, endOffset);
+        }
+    }
+}
+
+void QQuickWebEngineViewAccessible::addSelection(int startOffset, int endOffset)
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->addSelection(startOffset, endOffset);
+        }
+    }
+}
+
+void QQuickWebEngineViewAccessible::removeSelection(int selectionIndex)
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->removeSelection(selectionIndex);
+        }
+    }
+}
+
+void QQuickWebEngineViewAccessible::setCursorPosition(int position)
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->setCursorPosition(position);
+        }
+    }
+}
+
+QString QQuickWebEngineViewAccessible::attributes(int offset, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->attributes(offset, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString QQuickWebEngineViewAccessible::textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textAtOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString QQuickWebEngineViewAccessible::textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textAfterOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString QQuickWebEngineViewAccessible::textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textBeforeOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+int QQuickWebEngineViewAccessible::offsetAtPoint(const QPoint &point) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->offsetAtPoint(point);
+        }
+    }
+    return 0;
+}
+
+QRect QQuickWebEngineViewAccessible::characterRect(int offset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->characterRect(offset);
+        }
+    }
+    return QRect();
+}
+
+int QQuickWebEngineViewAccessible::selectionCount() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->selectionCount();
+        }
+    }
+    return 0;
+}
+
+void QQuickWebEngineViewAccessible::selection(int selectionIndex, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->selection(selectionIndex, startOffset, endOffset);
+        }
+    }
+}
+
+int QQuickWebEngineViewAccessible::cursorPosition() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->cursorPosition();
+        }
+    }
+    return 0;
+}
+
+int QQuickWebEngineViewAccessible::characterCount() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->characterCount();
+        }
+    }
+    return 0;
+}
+
+QString QQuickWebEngineViewAccessible::text(int startOffset, int endOffset) const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->text(startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+int QQuickWebEngineViewAccessible::columnIndex() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto cell_iface = static_cast<QAccessibleTableCellInterface *>(browserAcc->interface_cast(QAccessible::TableCellInterface))) {
+            return cell_iface->columnIndex();
+        }
+    }
+    return 0;
+}
+
+int QQuickWebEngineViewAccessible::rowIndex() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto cell_iface = static_cast<QAccessibleTableCellInterface *>(browserAcc->interface_cast(QAccessible::TableCellInterface))) {
+            return cell_iface->rowIndex();
+        }
+    }
+    return 0;
+}
+
+int QQuickWebEngineViewAccessible::columnExtent() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto cell_iface = static_cast<QAccessibleTableCellInterface *>(browserAcc->interface_cast(QAccessible::TableCellInterface))) {
+            return cell_iface->columnExtent();
+        }
+    }
+    return 0;
+}
+
+int QQuickWebEngineViewAccessible::rowExtent() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto cell_iface = static_cast<QAccessibleTableCellInterface *>(browserAcc->interface_cast(QAccessible::TableCellInterface))) {
+            return cell_iface->rowExtent();
+        }
+    }
+    return 0;
+}
+
+QAccessibleInterface *QQuickWebEngineViewAccessible::table() const
+{
+    if (auto browserAcc = browserAccessible()) {
+        if (auto cell_iface = static_cast<QAccessibleTableCellInterface *>(browserAcc->interface_cast(QAccessible::TableCellInterface))) {
+            return cell_iface->table();
+        }
+    }
+    return nullptr;
 }
 
 QQuickWebEngineView *QQuickWebEngineViewAccessible::engineView() const
@@ -113,12 +342,19 @@ QString RenderWidgetHostViewQtDelegateQuickAccessible::text(QAccessible::Text) c
 
 QAccessible::Role RenderWidgetHostViewQtDelegateQuickAccessible::role() const
 {
-    return QAccessible::Client;
+    return QAccessible::WebDocument;
 }
 
 QAccessible::State RenderWidgetHostViewQtDelegateQuickAccessible::state() const
 {
     return viewAccessible()->state();
+}
+
+void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible::InterfaceType t)
+{
+    if (t == QAccessible::InterfaceType::Text)
+        return static_cast<QAccessibleTextInterface *>(this);
+    return nullptr;
 }
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::focusChild() const
@@ -145,4 +381,159 @@ QQuickWebEngineViewAccessible *RenderWidgetHostViewQtDelegateQuickAccessible::vi
 {
     return static_cast<QQuickWebEngineViewAccessible *>(QAccessible::queryAccessibleInterface(m_view));
 }
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::scrollToSubstring(int startIndex, int endIndex)
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->scrollToSubstring(startIndex, endIndex);
+        }
+    }
+}
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::setSelection(int selectionIndex, int startOffset, int endOffset)
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->setSelection(selectionIndex, startOffset, endOffset);
+        }
+    }
+}
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::addSelection(int startOffset, int endOffset)
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->addSelection(startOffset, endOffset);
+        }
+    }
+}
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::removeSelection(int selectionIndex)
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->removeSelection(selectionIndex);
+        }
+    }
+}
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::setCursorPosition(int position)
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->setCursorPosition(position);
+        }
+    }
+}
+
+QString RenderWidgetHostViewQtDelegateQuickAccessible::attributes(int offset, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->attributes(offset, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textAtOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textAfterOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->textBeforeOffset(offset, type, startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
+int RenderWidgetHostViewQtDelegateQuickAccessible::offsetAtPoint(const QPoint &point) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->offsetAtPoint(point);
+        }
+    }
+    return 0;
+}
+
+QRect RenderWidgetHostViewQtDelegateQuickAccessible::characterRect(int offset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->characterRect(offset);
+        }
+    }
+    return QRect();
+}
+
+int RenderWidgetHostViewQtDelegateQuickAccessible::selectionCount() const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->selectionCount();
+        }
+    }
+    return 0;
+}
+
+void RenderWidgetHostViewQtDelegateQuickAccessible::selection(int selectionIndex, int *startOffset, int *endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            text_iface->selection(selectionIndex, startOffset, endOffset);
+        }
+    }
+}
+
+int RenderWidgetHostViewQtDelegateQuickAccessible::cursorPosition() const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->cursorPosition();
+        }
+    }
+    return 0;
+}
+
+int RenderWidgetHostViewQtDelegateQuickAccessible::characterCount() const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->characterCount();
+        }
+    }
+    return 0;
+}
+
+QString RenderWidgetHostViewQtDelegateQuickAccessible::text(int startOffset, int endOffset) const
+{
+    if (auto browserAcc = viewAccessible()->browserAccessible()) {
+        if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
+            return text_iface->text(startOffset, endOffset);
+        }
+    }
+    return QString();
+}
+
 } // namespace QtWebEngineCore
