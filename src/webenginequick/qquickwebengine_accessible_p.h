@@ -18,8 +18,6 @@
 
 #include <QtCore/qpointer.h>
 #include <QtGui/qaccessibleobject.h>
-#include <QtGui/qaccessibletextinterface.h>
-#include <QtGui/qaccessibletablecellinterface.h>
 
 QT_BEGIN_NAMESPACE
 class QQuickWebEngineView;
