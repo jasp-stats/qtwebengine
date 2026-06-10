@@ -66,6 +66,8 @@ public:
     QAccessibleInterface *table() const override;
 
     QAccessibleInterface *browserAccessible() const;
+
+private:
     QQuickWebEngineView *engineView() const;
     mutable QAccessibleInterface *m_browserAccessibleCache = nullptr;
 };
