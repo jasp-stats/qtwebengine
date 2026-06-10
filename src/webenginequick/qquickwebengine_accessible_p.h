@@ -59,6 +59,12 @@ public:
     QList<QAccessibleInterface*> columnHeaderCells() const override;
     QList<QAccessibleInterface*> rowHeaderCells() const override;
 
+    int columnIndex() const override;
+    int rowIndex() const override;
+    int columnExtent() const override;
+    int rowExtent() const override;
+    QAccessibleInterface *table() const override;
+
 private:
     QAccessibleInterface *browserAccessible() const;
     QQuickWebEngineView *engineView() const;
@@ -105,6 +111,7 @@ public:
 
 private:
     QAccessibleInterface *browserAccessible() const;
+    QQuickWebEngineViewAccessible *viewAccessible() const;
     QPointer<QQuickWebEngineView> m_view;
 };
 } // namespace QtWebEngineCore
