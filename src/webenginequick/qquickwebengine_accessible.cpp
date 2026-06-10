@@ -85,18 +85,15 @@ QAccessible::State QQuickWebEngineViewAccessible::state() const
 
 void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t)
 {
-    if (t == QAccessible::InterfaceType::Text)
+    if (t == QAccessible::InterfaceType::text)
         return static_cast<QAccessibleTextInterface *>(this);
-    if (t == QAccessible::InterfaceType::TableCell)
-        return static_cast<QAccessibleTableCellInterface *>(this);
     return nullptr;
 }
 
 QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
 {
     if (!m_browserAccessibleCache && isValid()) {
-        auto *adapter = engineView()->d_func()->adapter;
-        if (adapter) {
+        if (auto *adapter = engineView()->d_func()->adapter.data()) {
             m_browserAccessibleCache = adapter->browserAccessible();
         }
     }
@@ -158,7 +155,7 @@ QString QQuickWebEngineViewAccessible::attributes(int offset, int *startOffset, 
     return QString();
 }
 
-QString QQuickWebEngineViewAccessible::textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString QQuickWebEngineViewAccessible::textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
@@ -168,7 +165,7 @@ QString QQuickWebEngineViewAccessible::textAtOffset(int offset, QAccessible::Bou
     return QString();
 }
 
-QString QQuickWebEngineViewAccessible::textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString QQuickWebEngineViewAccessible::textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
@@ -178,7 +175,7 @@ QString QQuickWebEngineViewAccessible::textAfterOffset(int offset, QAccessible::
     return QString();
 }
 
-QString QQuickWebEngineViewAccessible::textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString QQuickWebEngineViewAccessible::textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
@@ -245,6 +242,21 @@ int QQuickWebEngineViewAccessible::characterCount() const
         }
     }
     return 0;
+}
+
+bool QQuickWebEngineViewAccessible::isSelected() const
+{
+    return false;
+}
+
+QList<QAccessibleInterface*> QQuickWebEngineViewAccessible::columnHeaderCells() const
+{
+    return QList<QAccessibleInterface*>();
+}
+
+QList<QAccessibleInterface*> QQuickWebEngineViewAccessible::rowHeaderCells() const
+{
+    return QList<QAccessibleInterface*>();
 }
 
 QString QQuickWebEngineViewAccessible::text(int startOffset, int endOffset) const
@@ -352,7 +364,7 @@ QAccessible::State RenderWidgetHostViewQtDelegateQuickAccessible::state() const
 
 void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible::InterfaceType t)
 {
-    if (t == QAccessible::InterfaceType::Text)
+    if (t == QAccessible::InterfaceType::text)
         return static_cast<QAccessibleTextInterface *>(this);
     return nullptr;
 }
@@ -437,7 +449,7 @@ QString RenderWidgetHostViewQtDelegateQuickAccessible::attributes(int offset, in
     return QString();
 }
 
-QString RenderWidgetHostViewQtDelegateQuickAccessible::textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = viewAccessible()->browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
@@ -447,7 +459,7 @@ QString RenderWidgetHostViewQtDelegateQuickAccessible::textAtOffset(int offset, 
     return QString();
 }
 
-QString RenderWidgetHostViewQtDelegateQuickAccessible::textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = viewAccessible()->browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {
@@ -457,7 +469,7 @@ QString RenderWidgetHostViewQtDelegateQuickAccessible::textAfterOffset(int offse
     return QString();
 }
 
-QString RenderWidgetHostViewQtDelegateQuickAccessible::textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const
+QString RenderWidgetHostViewQtDelegateQuickAccessible::textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const
 {
     if (auto browserAcc = viewAccessible()->browserAccessible()) {
         if (auto text_iface = static_cast<QAccessibleTextInterface *>(browserAcc->interface_cast(QAccessible::TextInterface))) {

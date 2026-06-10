@@ -39,14 +39,14 @@ public:
     void *interface_cast(QAccessible::InterfaceType t) override;
 
     void scrollToSubstring(int startIndex, int endIndex) override;
-    void setSelection(int selectionIndex, int startOffset, int endOffset) override;
+   void setSelection(int selectionIndex, int startOffset, int endOffset) override;
     void addSelection(int startOffset, int endOffset) override;
     void removeSelection(int selectionIndex) override;
     void setCursorPosition(int position) override;
     QString attributes(int offset, int *startOffset, int *endOffset) const override;
-    QString textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
-    QString textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
-    QString textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
     int offsetAtPoint(const QPoint &point) const override;
     QRect characterRect(int offset) const override;
     int selectionCount() const override;
@@ -55,11 +55,9 @@ public:
     int characterCount() const override;
     QString text(int startOffset, int endOffset) const override;
 
-    int columnIndex() const override;
-    int rowIndex() const override;
-    int columnExtent() const override;
-    int rowExtent() const override;
-    QAccessibleInterface *table() const override;
+    bool isSelected() const override;
+    QList<QAccessibleInterface*> columnHeaderCells() const override;
+    QList<QAccessibleInterface*> rowHeaderCells() const override;
 
 private:
     QAccessibleInterface *browserAccessible() const;
@@ -89,14 +87,14 @@ public:
     void *interface_cast(QAccessible::InterfaceType t) override;
 
     void scrollToSubstring(int startIndex, int endIndex) override;
-    void setSelection(int selectionIndex, int startOffset, int endOffset) override;
+  void setSelection(int selectionIndex, int startOffset, int endOffset) override;
     void addSelection(int startOffset, int endOffset) override;
     void removeSelection(int selectionIndex) override;
     void setCursorPosition(int position) override;
     QString attributes(int offset, int *startOffset, int *endOffset) const override;
-    QString textAtOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
-    QString textAfterOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
-    QString textBeforeOffset(int offset, QAccessible::BoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAtOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textAfterOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
+    QString textBeforeOffset(int offset, QAccessible::TextBoundaryType type, int *startOffset, int *endOffset) const override;
     int offsetAtPoint(const QPoint &point) const override;
     QRect characterRect(int offset) const override;
     int selectionCount() const override;
@@ -106,7 +104,7 @@ public:
     QString text(int startOffset, int endOffset) const override;
 
 private:
-    QQuickWebEngineViewAccessible *viewAccessible() const;
+    QAccessibleInterface *browserAccessible() const;
     QPointer<QQuickWebEngineView> m_view;
 };
 } // namespace QtWebEngineCore
