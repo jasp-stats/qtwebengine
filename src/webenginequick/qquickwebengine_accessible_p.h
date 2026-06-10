@@ -65,7 +65,6 @@ public:
     int rowExtent() const override;
     QAccessibleInterface *table() const override;
 
-private:
     QAccessibleInterface *browserAccessible() const;
     QQuickWebEngineView *engineView() const;
     mutable QAccessibleInterface *m_browserAccessibleCache = nullptr;
