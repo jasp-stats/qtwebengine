@@ -336,7 +336,7 @@ RenderWidgetHostViewQtDelegateQuickAccessible::RenderWidgetHostViewQtDelegateQui
 
 bool RenderWidgetHostViewQtDelegateQuickAccessible::isValid() const
 {
-    if (!browserAccessible() || !browserAccessible()->isValid())
+    if (!viewAccessible() || !browserAccessible() || !browserAccessible()->isValid())
         return false;
 
     return QAccessibleObject::isValid();
@@ -344,7 +344,9 @@ bool RenderWidgetHostViewQtDelegateQuickAccessible::isValid() const
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::parent() const
 {
-    return browserAccessible()->parent();
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->parent();
+    return nullptr;
 }
 
 QString RenderWidgetHostViewQtDelegateQuickAccessible::text(QAccessible::Text) const
@@ -359,7 +361,9 @@ QAccessible::Role RenderWidgetHostViewQtDelegateQuickAccessible::role() const
 
 QAccessible::State RenderWidgetHostViewQtDelegateQuickAccessible::state() const
 {
-    return browserAccessible()->state();
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->state();
+    return QAccessible::State();
 }
 
 void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible::InterfaceType t)
@@ -371,32 +375,44 @@ void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible:
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::focusChild() const
 {
-    return browserAccessible()->focusChild();
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->focusChild();
+    return nullptr;
 }
 
 int RenderWidgetHostViewQtDelegateQuickAccessible::childCount() const
 {
-    return browserAccessible()->childCount();
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->childCount();
+    return 0;
 }
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::child(int index) const
 {
-    return browserAccessible()->child(index);
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->child(index);
+    return nullptr;
 }
 
 int RenderWidgetHostViewQtDelegateQuickAccessible::indexOfChild(const QAccessibleInterface *c) const
 {
-    return browserAccessible()->indexOfChild(c);
+    if (auto browserAcc = browserAccessible())
+        return browserAcc->indexOfChild(c);
+    return -1;
 }
 
 QQuickWebEngineViewAccessible *RenderWidgetHostViewQtDelegateQuickAccessible::viewAccessible() const
 {
+    if (!m_view)
+        return nullptr;
     return static_cast<QQuickWebEngineViewAccessible *>(QAccessible::queryAccessibleInterface(m_view));
 }
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::browserAccessible() const
 {
-    return viewAccessible()->browserAccessible();
+    if (auto viewAcc = viewAccessible())
+        return viewAcc->browserAccessible();
+    return nullptr;
 }
 
 void RenderWidgetHostViewQtDelegateQuickAccessible::scrollToSubstring(int startIndex, int endIndex)
