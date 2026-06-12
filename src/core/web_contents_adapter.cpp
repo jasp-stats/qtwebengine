@@ -80,6 +80,7 @@
 #include "browser_accessibility_qt.h"
 #include "ui/accessibility/platform/browser_accessibility_manager.h"
 #include <QtGui/qaccessible.h>
+#include <QtCore/qdebug.h>
 #endif
 
 #if QT_CONFIG(webengine_printing_and_pdf)
@@ -1039,16 +1040,38 @@ QWebEngineUrlRequestInterceptor* WebContentsAdapter::requestInterceptor() const
 #if QT_CONFIG(accessibility)
 QAccessibleInterface *WebContentsAdapter::browserAccessible()
 {
+    qDebug() << "WebContentsAdapter::browserAccessible: Called";
     CHECK_INITIALIZED(nullptr);
     content::RenderFrameHostImpl *rfh = static_cast<content::RenderFrameHostImpl *>(m_webContents->GetPrimaryMainFrame());
-    if (!rfh)
+    if (!rfh) {
+        qDebug() << "WebContentsAdapter::browserAccessible: No RenderFrameHost";
+        qWarning() << "browserAccessible: No RenderFrameHost";
         return nullptr;
+    }
     ui::BrowserAccessibilityManager *manager = rfh->GetOrCreateBrowserAccessibilityManager();
-    if (!manager) // FIXME!
+    qDebug() << "WebContentsAdapter::browserAccessible: manager=" << (manager ? "non-null" : "null");
+    if (!manager) {
+        qWarning() << "browserAccessible: No BrowserAccessibilityManager - checking accessibility mode";
+        auto mode = rfh->GetAccessibilityMode();
+        qWarning() << "browserAccessible: Accessibility mode flags:" << static_cast<int>(mode.value());
+        qWarning() << "browserAccessible: Has kNativeAPIs:" << mode.has_mode(ui::AXMode::kNativeAPIs);
         return nullptr;
+    }
     ui::BrowserAccessibility *acc = manager->GetFromAXNode(manager->GetRoot());
+    qDebug() << "WebContentsAdapter::browserAccessible: acc=" << (acc ? "non-null" : "null");
+    if (!acc) {
+        qWarning() << "browserAccessible: No BrowserAccessibility from GetFromAXNode(GetRoot())";
+        if (manager->GetRoot()) {
+            qWarning() << "browserAccessible: Root node exists, ID:" << manager->GetRoot()->id();
+        } else {
+            qWarning() << "browserAccessible: No root node in manager";
+        }
+        return nullptr;
+    }
 
-    return ui::toQAccessibleInterface(acc);
+    QAccessibleInterface *iface = ui::toQAccessibleInterface(acc);
+    qDebug() << "WebContentsAdapter::browserAccessible: returning iface=" << (iface ? "non-null" : "null");
+    return iface;
 }
 #endif // QT_CONFIG(accessibility)
 

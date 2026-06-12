@@ -63,6 +63,8 @@
 #include <QScopeGuard>
 #include <QScreen>
 #include <QWindow>
+#include <QDebug>
+#include <QDebug>
 
 namespace QtWebEngineCore {
 
@@ -307,8 +309,12 @@ gfx::NativeView RenderWidgetHostViewQt::GetNativeView()
 
 content::WebContentsAccessibility *RenderWidgetHostViewQt::GetWebContentsAccessibility()
 {
-    if (!m_webContentsAccessibility)
+    qDebug() << "RenderWidgetHostViewQt::GetWebContentsAccessibility: Called";
+    if (!m_webContentsAccessibility) {
+        qDebug() << "RenderWidgetHostViewQt::GetWebContentsAccessibility: Creating new WebContentsAccessibilityQt";
         m_webContentsAccessibility.reset(new WebContentsAccessibilityQt(this));
+        qDebug() << "RenderWidgetHostViewQt::GetWebContentsAccessibility: Created m_webContentsAccessibility=" << m_webContentsAccessibility.get();
+    }
     return m_webContentsAccessibility.get();
 }
 

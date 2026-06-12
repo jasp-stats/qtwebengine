@@ -31,12 +31,18 @@ BrowserAccessibilityManager::Create(const ui::AXTreeUpdate &initialTree,
     QtWebEngineCore::WebContentsAccessibilityQt *access = nullptr;
     access = static_cast<QtWebEngineCore::WebContentsAccessibilityQt *>(delegate->AccessibilityGetWebContentsAccessibility());
 
+    qDebug() << "BrowserAccessibilityManager::Create: Called";
+    qDebug() << "BrowserAccessibilityManager::Create: access=" << (access ? "non-null" : "null");
+    
     // Accessibility is not supported for guest views and child frames.
     if (!access) {
+        qDebug() << "BrowserAccessibilityManager::Create: No access, returning nullptr";
         return nullptr;
     }
 
-    return new BrowserAccessibilityManagerQt(access, initialTree, nodeDelegate, delegate);
+    BrowserAccessibilityManager *manager = new BrowserAccessibilityManagerQt(access, initialTree, nodeDelegate, delegate);
+    qDebug() << "BrowserAccessibilityManager::Create: Created manager=" << manager;
+    return manager;
 #else
     Q_UNUSED(initialTree);
     Q_UNUSED(delegate);
@@ -67,8 +73,10 @@ BrowserAccessibilityManagerQt::BrowserAccessibilityManagerQt(
     : BrowserAccessibilityManager(nodeDelegate, delegate)
     , m_webContentsAccessibility(webContentsAccessibility)
 {
+    qDebug() << "BrowserAccessibilityManagerQt::ctor: Creating manager";
     Initialize(initialTree);
     m_valid = true; // BrowserAccessibilityQt can start using the AXTree
+    qDebug() << "BrowserAccessibilityManagerQt::ctor: Created, m_valid=" << m_valid;
 }
 
 BrowserAccessibilityManagerQt::~BrowserAccessibilityManagerQt()
