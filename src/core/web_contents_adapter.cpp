@@ -1053,7 +1053,7 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
     if (!manager) {
         qWarning() << "browserAccessible: No BrowserAccessibilityManager - checking accessibility mode";
         auto mode = rfh->GetAccessibilityMode();
-        qWarning() << "browserAccessible: Accessibility mode flags:" << static_cast<int>(mode.value());
+        qWarning() << "browserAccessible: Accessibility mode flags:" << mode.flags();
         qWarning() << "browserAccessible: Has kNativeAPIs:" << mode.has_mode(ui::AXMode::kNativeAPIs);
         return nullptr;
     }
