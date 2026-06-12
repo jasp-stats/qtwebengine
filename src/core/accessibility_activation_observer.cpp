@@ -6,6 +6,7 @@
 
 #include "content/browser/accessibility/browser_accessibility_state_impl.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
+#include "web_contents_adapter.h"
 
 using namespace Qt::StringLiterals;
 
@@ -47,6 +48,17 @@ void AccessibilityActivationObserver::accessibilityActiveChanged(bool active)
     if (active) {
         scoped_accessibility_mode_ =
             content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+
+        // When accessibility is enabled after startup, reload all WebContents pages.
+        // This ensures accessibility trees are created with proper accessibility support
+        // from the renderer side, and browser-side managers are properly initialized.
+        auto webContentsList = content::WebContentsImpl::GetAllWebContents();
+        for (auto *webContents : webContentsList) {
+            if (!webContents->IsBeingDestroyed() && !webContents->IsNeverComposited()) {
+                // Reload the page to trigger proper accessibility initialization
+                webContents->GetController().Reload(content::ReloadType::NORMAL, true);
+            }
+        }
     } else {
         scoped_accessibility_mode_.reset();
     }
