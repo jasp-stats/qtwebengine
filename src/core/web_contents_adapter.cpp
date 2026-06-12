@@ -1052,7 +1052,7 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
     qDebug() << "WebContentsAdapter::browserAccessible: manager=" << (manager ? "non-null" : "null");
     if (!manager) {
         qWarning() << "browserAccessible: No BrowserAccessibilityManager - checking accessibility mode";
-        auto mode = rfh->GetAccessibilityMode();
+        auto mode = m_webContents->GetAccessibilityMode();
         qWarning() << "browserAccessible: Accessibility mode flags:" << mode.flags();
         qWarning() << "browserAccessible: Has kNativeAPIs:" << mode.has_mode(ui::AXMode::kNativeAPIs);
         return nullptr;
@@ -1972,7 +1972,7 @@ quint64 WebContentsAdapter::mainFrameId() const
 #define CHECK_INITIALIZED_AND_VALID_FRAME(webengine_frame_id_variable, frame_tree_node_variable,   \
                                           return_value)                                            \
     CHECK_INITIALIZED(return_value);                                                               \
-    if (webengine_frame_id_variable == -1) /* kInvalidFrameId)*/                                   \
+    if (webengine_frame_id_variable == static_cast<quint64>(-1)) /* kInvalidFrameId)*/             \
         return return_value;                                                                       \
     auto *frame_tree_node_variable = content::FrameTreeNode::GloballyFindByID(                     \
             static_cast<content::FrameTreeNodeId>(webengine_frame_id_variable));                   \
