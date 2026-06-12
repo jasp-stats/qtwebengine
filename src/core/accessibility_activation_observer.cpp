@@ -5,6 +5,8 @@
 #include "accessibility_activation_observer.h"
 
 #include "content/browser/accessibility/browser_accessibility_state_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "web_contents_adapter.h"
 
