@@ -69,6 +69,7 @@ public:
 
 private:
     QQuickWebEngineView *engineView() const;
+    mutable QAccessibleInterface *m_browserAccessibleCache = nullptr;
 };
 
 QT_END_NAMESPACE

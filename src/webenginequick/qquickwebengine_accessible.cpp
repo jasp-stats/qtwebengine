@@ -87,17 +87,20 @@ void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t
 {
     if (t == QAccessible::TextInterface)
         return static_cast<QAccessibleTextInterface *>(this);
+    if (t == QAccessible::TableCellInterface)
+        return static_cast<QAccessibleTableCellInterface *>(this);
     return nullptr;
 }
 
 QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
 {
-    if (isValid()) {
+    // Always try to get a fresh browserAccessible if the cache is not yet populated
+    if (!m_browserAccessibleCache && isValid()) {
         if (auto *adapter = engineView()->d_func()->adapter.data()) {
-            return adapter->browserAccessible();
+            m_browserAccessibleCache = adapter->browserAccessible();
         }
     }
-    return nullptr;
+    return m_browserAccessibleCache;
 }
 
 void QQuickWebEngineViewAccessible::scrollToSubstring(int startIndex, int endIndex)

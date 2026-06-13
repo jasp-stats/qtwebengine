@@ -11,6 +11,8 @@
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "web_contents_adapter.h"
 
+#include <stdio.h>
+
 using namespace Qt::StringLiterals;
 
 namespace QtWebEngineCore {
@@ -38,10 +40,12 @@ AccessibilityActivationObserver::AccessibilityActivationObserver()
     if (isAccessibilityEnabled()) {
         qDebug() << "AccessibilityActivationObserver::ctor: Installing activation observer";
         QAccessible::installActivationObserver(this);
-        if (QAccessible::isActive()) {
-            qDebug() << "AccessibilityActivationObserver::ctor: QAccessible is active";
-            content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
-        }
+
+        qDebug() << "AccessibilityActivationObserver::ctor: Forcing accessibility (active=" << QAccessible::isActive() << ")";
+        content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
+        scoped_accessibility_mode_ =
+            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+        qDebug() << "AccessibilityActivationObserver::ctor: Created scoped_accessibility_mode_";
     }
 }
 
