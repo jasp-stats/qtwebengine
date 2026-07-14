@@ -532,14 +532,14 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
     }
     
     // Force a load to ensure the renderer receives the accessibility mode before
-    // creating the document. We'll use a blank page that we'll immediately replace.
+    // creating the document. Done via LoadIfNecessary below.
     log = fopen("/tmp/browser_accessible.log", "a");
     if (log) {
-        fprintf(log, "[initialize] Loading about:blank to trigger accessibility in renderer\n");
+        fprintf(log, "[initialize] Skipping premature about:blank load\n");
         fflush(log);
         fclose(log);
     }
-    webContents()->GetController().LoadURL(GURL("about:blank"), content::Referrer(), ui::PAGE_TRANSITION_TYPED, std::string());
+    // The LoadIfNecessary() call below will trigger the first navigation properly
 #endif
 
     initializeRenderPrefs();
