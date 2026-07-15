@@ -44,7 +44,7 @@ AccessibilityActivationObserver::AccessibilityActivationObserver()
         qDebug() << "AccessibilityActivationObserver::ctor: Forcing accessibility (active=" << QAccessible::isActive() << ")";
         content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
         scoped_accessibility_mode_ =
-            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
         qDebug() << "AccessibilityActivationObserver::ctor: Created scoped_accessibility_mode_";
     }
 }
@@ -61,7 +61,7 @@ void AccessibilityActivationObserver::accessibilityActiveChanged(bool active)
     if (active) {
         qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Creating scoped_accessibility_mode_";
         scoped_accessibility_mode_ =
-            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+            content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
         qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Created scoped_accessibility_mode_";
 
         // When accessibility is enabled after startup, reload all WebContents pages.

@@ -501,7 +501,7 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
         fclose(log);
     }
     m_scopedAccessibilityMode =
-        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete);
+        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
     
     // Also create WebContents-level scoped mode for explicit targeting
     log = fopen("/tmp/browser_accessible.log", "a");
@@ -511,7 +511,7 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
         fclose(log);
     }
     m_webContentsScopedMode =
-        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForWebContents(webContents(), ui::kAXModeComplete);
+        content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForWebContents(webContents(), ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
     
     // Force accessibility mode to be applied immediately to the WebContents,
     // bypassing ProgressiveAccessibility's hidden check.
@@ -521,7 +521,7 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
         fflush(log);
         fclose(log);
     }
-    static_cast<content::WebContentsImpl*>(webContents())->SetAccessibilityMode(ui::kAXModeComplete);
+    static_cast<content::WebContentsImpl*>(webContents())->SetAccessibilityMode(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
     
     log = fopen("/tmp/browser_accessible.log", "a");
     if (log) {
@@ -1187,7 +1187,9 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
         return nullptr;
     }
 
-    // Check PlatformChildCount - if 0, reload once
+    // Check PlatformChildCount - if 0, the initial tree may be sparse. With
+    // kScreenReader mode enabled, the renderer will send AXTree updates when
+    // dynamic content loads. kChildrenChanged events handle this in FireBlinkEvent.
     int childCount = acc->PlatformChildCount();
     log = fopen("/tmp/browser_accessible.log", "a");
     if (log) {
@@ -1196,21 +1198,10 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
         fflush(log);
         fclose(log);
     }
-    if (childCount == 0) {
-        log = fopen("/tmp/browser_accessible.log", "a");
-        if (log) {
-            fprintf(log, "[browserAccessible] ChildCount=0, reloading to try to get accessibility tree from renderer\n");
-            fflush(log);
-            fclose(log);
-        }
-        // Reload once to try to get children
-        m_webContents->GetController().Reload(content::ReloadType::NORMAL, true);
-        return nullptr;
-    }
 
     log = fopen("/tmp/browser_accessible.log", "a");
     if (log) {
-        fprintf(log, "[browserAccessible] Returning QAccessibleInterface\n");
+        fprintf(log, "[browserAccessible] Returning QAccessibleInterface (childCount=%d)\n", childCount);
         fflush(log);
         fclose(log);
     }

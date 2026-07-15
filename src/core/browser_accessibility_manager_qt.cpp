@@ -162,12 +162,32 @@ void BrowserAccessibilityManagerQt::FireBlinkEvent(ax::mojom::Event event_type,
         QAccessible::updateAccessibility(&event);
         break;
     }
-    case ax::mojom::Event::kChildrenChanged:
+    case ax::mojom::Event::kChildrenChanged: {
+        for (unsigned int i = 0; i < node->PlatformChildCount(); ++i) {
+            ui::BrowserAccessibility *childNode = node->PlatformGetChild(i);
+            if (auto *childIface = toQAccessibleInterface(childNode)) {
+                QAccessibleEvent event(childIface, QAccessible::ObjectShow);
+                if (event.object())
+                    event.setChild(-1);
+                QAccessible::updateAccessibility(&event);
+            }
+        }
         break;
-    case ax::mojom::Event::kLayoutComplete:
+    }
+    case ax::mojom::Event::kLayoutComplete: {
+        QAccessibleEvent event(iface, QAccessible::DocumentContentChanged);
+        if (event.object())
+            event.setChild(-1);
+        QAccessible::updateAccessibility(&event);
         break;
-    case ax::mojom::Event::kLoadComplete:
+    }
+    case ax::mojom::Event::kLoadComplete: {
+        QAccessibleEvent event(iface, QAccessible::DocumentLoadComplete);
+        if (event.object())
+            event.setChild(-1);
+        QAccessible::updateAccessibility(&event);
         break;
+    }
     case ax::mojom::Event::kTextChanged: {
         QAccessibleTextUpdateEvent event(iface, -1, QString(), QString());
         if (event.object())
@@ -218,6 +238,43 @@ void BrowserAccessibilityManagerQt::FireGeneratedEvent(ui::AXEventGenerator::Eve
             QAccessible::updateAccessibility(&event);
         }
         break;
+    case ui::AXEventGenerator::Event::CHILDREN_CHANGED: {
+        for (unsigned int i = 0; i < wrapper->PlatformChildCount(); ++i) {
+            ui::BrowserAccessibility *childNode = wrapper->PlatformGetChild(i);
+            if (auto *childIface = toQAccessibleInterface(childNode)) {
+                QAccessibleEvent event(childIface, QAccessible::ObjectShow);
+                if (event.object())
+                    event.setChild(-1);
+                QAccessible::updateAccessibility(&event);
+            }
+        }
+        break;
+    }
+    case ui::AXEventGenerator::Event::SUBTREE_CREATED: {
+        if (iface) {
+            QAccessibleEvent event(iface, QAccessible::ObjectShow);
+            if (event.object())
+                event.setChild(-1);
+            QAccessible::updateAccessibility(&event);
+            for (unsigned int i = 0; i < wrapper->PlatformChildCount(); ++i) {
+                ui::BrowserAccessibility *childNode = wrapper->PlatformGetChild(i);
+                if (auto *childIface = toQAccessibleInterface(childNode)) {
+                    QAccessibleEvent childEvent(childIface, QAccessible::ObjectShow);
+                    if (childEvent.object())
+                        childEvent.setChild(-1);
+                    QAccessible::updateAccessibility(&childEvent);
+                }
+            }
+        }
+        break;
+    }
+    case ui::AXEventGenerator::Event::LAYOUT_INVALIDATED: {
+        QAccessibleEvent event(iface, QAccessible::DocumentContentChanged);
+        if (event.object())
+            event.setChild(-1);
+        QAccessible::updateAccessibility(&event);
+        break;
+    }
     default:
         break;
     }
