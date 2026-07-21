@@ -94,19 +94,12 @@ void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t
 
 QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
 {
-    if (!isValid()) {
-        m_browserAccessibleCache = nullptr;
+    if (!isValid())
         return nullptr;
+    if (auto *adapter = engineView()->d_func()->adapter.data()) {
+        return adapter->browserAccessible();
     }
-    if (!m_browserAccessibleCache) {
-        if (auto *adapter = engineView()->d_func()->adapter.data()) {
-            m_browserAccessibleCache = adapter->browserAccessible();
-        }
-    } else if (!m_browserAccessibleCache->isValid()) {
-        m_browserAccessibleCache = nullptr;
-        return nullptr;
-    }
-    return m_browserAccessibleCache;
+    return nullptr;
 }
 
 void QQuickWebEngineViewAccessible::scrollToSubstring(int startIndex, int endIndex)
