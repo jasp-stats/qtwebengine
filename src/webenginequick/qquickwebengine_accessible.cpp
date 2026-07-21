@@ -94,11 +94,17 @@ void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t
 
 QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
 {
-    // Always try to get a fresh browserAccessible if the cache is not yet populated
-    if (!m_browserAccessibleCache && isValid()) {
+    if (!isValid()) {
+        m_browserAccessibleCache = nullptr;
+        return nullptr;
+    }
+    if (!m_browserAccessibleCache) {
         if (auto *adapter = engineView()->d_func()->adapter.data()) {
             m_browserAccessibleCache = adapter->browserAccessible();
         }
+    } else if (!m_browserAccessibleCache->isValid()) {
+        m_browserAccessibleCache = nullptr;
+        return nullptr;
     }
     return m_browserAccessibleCache;
 }
