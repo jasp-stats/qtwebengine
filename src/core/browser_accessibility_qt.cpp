@@ -1303,7 +1303,14 @@ int BrowserAccessibilityInterface::columnExtent() const
 
 QList<QAccessibleInterface *> BrowserAccessibilityInterface::columnHeaderCells() const
 {
-    return QList<QAccessibleInterface*>();
+    QList<QAccessibleInterface *> result;
+    std::vector<ui::AXNode *> headers;
+    q->node()->GetTableCellColHeaders(&headers);
+    for (ui::AXNode *headerNode : headers) {
+        if (ui::BrowserAccessibility *acc = q->manager()->GetFromAXNode(headerNode))
+            result.append(ui::toQAccessibleInterface(acc));
+    }
+    return result;
 }
 
 int BrowserAccessibilityInterface::columnIndex() const
@@ -1322,7 +1329,14 @@ int BrowserAccessibilityInterface::rowExtent() const
 
 QList<QAccessibleInterface *> BrowserAccessibilityInterface::rowHeaderCells() const
 {
-    return QList<QAccessibleInterface*>();
+    QList<QAccessibleInterface *> result;
+    std::vector<ui::AXNode *> headers;
+    q->node()->GetTableCellRowHeaders(&headers);
+    for (ui::AXNode *headerNode : headers) {
+        if (ui::BrowserAccessibility *acc = q->manager()->GetFromAXNode(headerNode))
+            result.append(ui::toQAccessibleInterface(acc));
+    }
+    return result;
 }
 
 int BrowserAccessibilityInterface::rowIndex() const
@@ -1333,7 +1347,7 @@ int BrowserAccessibilityInterface::rowIndex() const
 
 bool BrowserAccessibilityInterface::isSelected() const
 {
-    return false;
+    return q->GetBoolAttribute(ax::mojom::BoolAttribute::kSelected);
 }
 
 ui::BrowserAccessibility *BrowserAccessibilityInterface::findTable() const

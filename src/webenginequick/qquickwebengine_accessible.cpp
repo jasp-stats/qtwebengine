@@ -217,16 +217,22 @@ int QQuickWebEngineViewAccessible::characterCount() const
 
 bool QQuickWebEngineViewAccessible::isSelected() const
 {
+    if (auto cell = cellInterface())
+        return cell->isSelected();
     return false;
 }
 
 QList<QAccessibleInterface*> QQuickWebEngineViewAccessible::columnHeaderCells() const
 {
+    if (auto cell = cellInterface())
+        return cell->columnHeaderCells();
     return QList<QAccessibleInterface*>();
 }
 
 QList<QAccessibleInterface*> QQuickWebEngineViewAccessible::rowHeaderCells() const
 {
+    if (auto cell = cellInterface())
+        return cell->rowHeaderCells();
     return QList<QAccessibleInterface*>();
 }
 
