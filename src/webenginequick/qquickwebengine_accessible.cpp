@@ -85,6 +85,8 @@ QAccessible::State QQuickWebEngineViewAccessible::state() const
 
 void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t)
 {
+    // Only Text and TableCell interfaces are exposed at the view level;
+    // all implementation is delegated to Chromium's accessibility tree.
     if (t == QAccessible::TextInterface)
         return static_cast<QAccessibleTextInterface *>(this);
     if (t == QAccessible::TableCellInterface)
@@ -94,6 +96,9 @@ void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t
 
 QAccessibleInterface *QQuickWebEngineViewAccessible::browserAccessible() const
 {
+    // Returns the root accessible interface from Chromium's accessibility tree
+    // via WebContentsAdapter. This is the bridge from Qt Quick accessibility
+    // to the browser's internal accessibility representation.
     if (!isValid())
         return nullptr;
     if (auto *adapter = engineView()->d_func()->adapter.data()) {
@@ -327,6 +332,7 @@ QAccessible::State RenderWidgetHostViewQtDelegateQuickAccessible::state() const
 
 void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible::InterfaceType t)
 {
+    // Only Text interface is exposed at the delegate level
     if (t == QAccessible::TextInterface)
         return static_cast<QAccessibleTextInterface *>(this);
     return nullptr;
@@ -369,6 +375,7 @@ QQuickWebEngineViewAccessible *RenderWidgetHostViewQtDelegateQuickAccessible::vi
 
 QAccessibleInterface *RenderWidgetHostViewQtDelegateQuickAccessible::browserAccessible() const
 {
+    // Bridges to the browser's accessibility tree via the parent view accessible
     if (auto viewAcc = viewAccessible())
         return viewAcc->browserAccessible();
     return nullptr;
