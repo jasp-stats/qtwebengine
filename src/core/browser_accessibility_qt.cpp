@@ -41,6 +41,13 @@ public:
     bool isReady() const;
     bool CanFireEvents() const override;
 
+    std::u16string GetHypertext() const override
+    {
+        if (IsChildOfLeaf())
+            return GetTextContentUTF16();
+        return ui::BrowserAccessibility::GetHypertext();
+    }
+
     QtWebEngineCore::BrowserAccessibilityInterface *interface = nullptr;
 };
 
@@ -143,6 +150,7 @@ public:
     void modelChange(QAccessibleTableModelChangeEvent *event) override;
 
 private:
+    QString textContent() const;
     ui::BrowserAccessibility *findTable() const;
     QList<QAccessibleInterface *> headersToList(const std::vector<ui::AXNode *> &headers) const;
     QList<ui::BrowserAccessibility *> selectedCellList() const;
@@ -327,7 +335,7 @@ void *BrowserAccessibilityInterface::interface_cast(QAccessible::InterfaceType t
             return static_cast<QAccessibleActionInterface*>(this);
         break;
     case QAccessible::TextInterface:
-        if (q->HasState(ax::mojom::State::kEditable))
+        if (q->HasState(ax::mojom::State::kEditable) || !textContent().isEmpty())
             return static_cast<QAccessibleTextInterface*>(this);
         break;
     case QAccessible::ValueInterface: {
@@ -1093,7 +1101,7 @@ void BrowserAccessibilityInterface::selection(int selectionIndex, int *startOffs
 
 QString BrowserAccessibilityInterface::text(int startOffset, int endOffset) const
 {
-    return text(QAccessible::Value).mid(startOffset, endOffset - startOffset);
+    return textContent().mid(startOffset, endOffset - startOffset);
 }
 
 void BrowserAccessibilityInterface::removeSelection(int selectionIndex)
@@ -1121,7 +1129,15 @@ void BrowserAccessibilityInterface::setSelection(int selectionIndex, int startOf
 
 int BrowserAccessibilityInterface::characterCount() const
 {
-    return text(QAccessible::Value).length();
+    return textContent().length();
+}
+
+QString BrowserAccessibilityInterface::textContent() const
+{
+    QString value = text(QAccessible::Value);
+    if (!value.isEmpty())
+        return value;
+    return text(QAccessible::Name);
 }
 
 void BrowserAccessibilityInterface::scrollToSubstring(int startIndex, int endIndex)
@@ -1182,7 +1198,7 @@ QString BrowserAccessibilityInterface::textBeforeOffset(int offset, QAccessible:
         return QString();
 
     ui::AXMovementOptions options(ui::AXBoundaryBehavior::kStopAtAnchorBoundary,
-                                  ui::AXBoundaryDetection::kCheckInitialPosition);
+                                  ui::AXBoundaryDetection::kDontCheckInitialPosition);
     auto boundary = toAxTextBoundary(boundaryType);
 
     auto range = pos->ExpandToEnclosingTextBoundary(boundary, ui::AXRangeExpandBehavior::kLeftFirst);

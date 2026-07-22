@@ -59,6 +59,11 @@ private Q_SLOTS:
     void tableCellInterface();
     void tableInterface();
     void actions();
+    void textBoundaries();
+    void characterRect();
+    void columnAndRowHeaders();
+    void columnAndRowDescriptions();
+    void actionKeyBindings();
 };
 
 // This will be called before the first test function is executed.
@@ -950,6 +955,238 @@ void tst_Accessibility::actions()
         QTRY_COMPARE(spyFinished.size(), 1);
         QCOMPARE(webView.url(), QUrl("about:blank")); // Changes the page, should be the last test
     }
+}
+
+void tst_Accessibility::textBoundaries()
+{
+    QWebEngineView webView;
+    QSignalSpy spyFinished(&webView, &QWebEngineView::loadFinished);
+    webView.setHtml("<html><body>"
+        "<input type='text' id='input1' value='Hello world'></input>"
+        "</body></html>");
+    webView.show();
+    QVERIFY(spyFinished.wait());
+
+    QAccessibleInterface *view = QAccessible::queryAccessibleInterface(&webView);
+    QTRY_COMPARE(view->child(0)->childCount(), 1);
+    QAccessibleInterface *document = view->child(0);
+    QAccessibleInterface *grouping = document->child(0);
+    QCOMPARE(grouping->childCount(), 1);
+    QAccessibleInterface *input = grouping->child(0);
+
+    QAccessibleTextInterface *text = input->textInterface();
+    QVERIFY(text);
+    QCOMPARE(text->characterCount(), 11);
+
+    int start = -1, end = -1;
+
+    // textBeforeOffset at WordBoundary: offset 6 ('w' of "world") -> "Hello " (or "Hello")
+    QString before = text->textBeforeOffset(6, QAccessible::WordBoundary, &start, &end);
+    QVERIFY(before.startsWith(QStringLiteral("Hello")));
+
+    // textAfterOffset at WordBoundary: offset 0 ('H' of "Hello") -> "world"
+    QCOMPARE(text->textAfterOffset(0, QAccessible::WordBoundary, &start, &end), QStringLiteral("world"));
+
+    // CharBoundary
+    QCOMPARE(text->textAtOffset(0, QAccessible::CharBoundary, &start, &end), QStringLiteral("H"));
+    QCOMPARE(start, 0);
+    QCOMPARE(end, 1);
+
+    QCOMPARE(text->textBeforeOffset(1, QAccessible::CharBoundary, &start, &end), QStringLiteral("H"));
+    QCOMPARE(start, 0);
+    QCOMPARE(end, 1);
+
+    QCOMPARE(text->textAfterOffset(0, QAccessible::CharBoundary, &start, &end), QStringLiteral("e"));
+    QCOMPARE(start, 1);
+    QCOMPARE(end, 2);
+
+    // LineBoundary: full line
+    QCOMPARE(text->textAtOffset(0, QAccessible::LineBoundary, &start, &end), QStringLiteral("Hello world"));
+    QCOMPARE(start, 0);
+    QCOMPARE(end, 11);
+}
+
+void tst_Accessibility::characterRect()
+{
+    QWebEngineView webView;
+    webView.resize(400, 400);
+    webView.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&webView));
+
+    QSignalSpy spyFinished(&webView, &QWebEngineView::loadFinished);
+    webView.setHtml("<html><body>"
+        "ABCDEF"
+        "</body></html>");
+    QVERIFY(spyFinished.wait());
+
+    QAccessibleInterface *view = QAccessible::queryAccessibleInterface(&webView);
+    // tree: view(Client) → WebDocument → Grouping → StaticText("ABCDEF")
+    QTRY_COMPARE(view->child(0)->childCount(), 1);
+    QAccessibleInterface *document = view->child(0);
+    QCOMPARE(document->role(), QAccessible::WebDocument);
+    QCOMPARE(document->childCount(), 1);
+    QAccessibleInterface *grouping = document->child(0);
+    QCOMPARE(grouping->childCount(), 1);
+    QAccessibleInterface *staticText = grouping->child(0);
+    QCOMPARE(staticText->role(), QAccessible::StaticText);
+    QCOMPARE(staticText->text(QAccessible::Name), QStringLiteral("ABCDEF"));
+
+    QAccessibleTextInterface *text = staticText->textInterface();
+    QVERIFY(text);
+    QCOMPARE(text->characterCount(), 6);
+
+    QRect firstRect = text->characterRect(0);
+    QVERIFY(!firstRect.isEmpty());
+    QVERIFY(firstRect.width() > 0);
+    QVERIFY(firstRect.height() > 0);
+
+    QRect lastRect = text->characterRect(5);
+    QVERIFY(!lastRect.isEmpty());
+    QVERIFY(lastRect.x() > firstRect.x());
+}
+
+void tst_Accessibility::columnAndRowHeaders()
+{
+    QWebEngineView webView;
+    webView.resize(400, 400);
+    webView.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&webView));
+
+    QSignalSpy spyFinished(&webView, &QWebEngineView::loadFinished);
+    webView.setHtml(QLatin1String(
+            "<table>"
+            "  <thead>"
+            "    <tr>"
+            "      <th id='col1' scope='col'>Header A</th>"
+            "      <th id='col2' scope='col'>Header B</th>"
+            "    </tr>"
+            "  </thead>"
+            "  <tbody>"
+            "    <tr>"
+            "      <th id='row1' scope='row'>Row A</th>"
+            "      <td id='cell1'>A1</td>"
+            "    </tr>"
+            "    <tr>"
+            "      <th id='row2' scope='row'>Row B</th>"
+            "      <td id='cell2'>B1</td>"
+            "    </tr>"
+            "  </tbody>"
+            "</table>"));
+    QTRY_COMPARE(spyFinished.size(), 1);
+
+    QAccessibleInterface *view = QAccessible::queryAccessibleInterface(&webView);
+    QTRY_COMPARE_WITH_TIMEOUT(view->child(0)->childCount(), 1, 20000);
+    QAccessibleInterface *document = view->child(0);
+    QAccessibleInterface *table = document->child(0);
+
+    QAccessibleTableInterface *tableInterface = table->tableInterface();
+    QVERIFY(tableInterface);
+
+    // Cell (1, 0) is Row A (th scope=row), it should have a row header (itself)
+    QAccessibleInterface *rowHeaderCell = tableInterface->cellAt(1, 0);
+    QVERIFY(rowHeaderCell);
+    QAccessibleTableCellInterface *rowHeaderIface = rowHeaderCell->tableCellInterface();
+    QVERIFY(rowHeaderIface);
+    QCOMPARE(rowHeaderIface->rowIndex(), 1);
+    QCOMPARE(rowHeaderIface->columnIndex(), 0);
+
+    // Cell (1, 1) is A1 - should have column and row headers
+    QAccessibleInterface *cell = tableInterface->cellAt(1, 1);
+    QVERIFY(cell);
+    QAccessibleTableCellInterface *cellIface = cell->tableCellInterface();
+    QVERIFY(cellIface);
+
+    QList<QAccessibleInterface *> colHeaders = cellIface->columnHeaderCells();
+    QList<QAccessibleInterface *> rowHeaders = cellIface->rowHeaderCells();
+
+    // There should be at least one column header and one row header
+    QVERIFY(colHeaders.size() >= 1);
+    QVERIFY(rowHeaders.size() >= 1);
+}
+
+void tst_Accessibility::columnAndRowDescriptions()
+{
+    QWebEngineView webView;
+    webView.resize(400, 400);
+    webView.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&webView));
+
+    QSignalSpy spyFinished(&webView, &QWebEngineView::loadFinished);
+    webView.setHtml(QLatin1String(
+            "<table>"
+            "  <thead>"
+            "    <tr>"
+            "      <th scope='col'>Col Alpha</th>"
+            "      <th scope='col'>Col Beta</th>"
+            "    </tr>"
+            "  </thead>"
+            "  <tbody>"
+            "    <tr>"
+            "      <th scope='row'>Row One</th>"
+            "      <td>A1</td>"
+            "    </tr>"
+            "  </tbody>"
+            "</table>"));
+    QTRY_COMPARE(spyFinished.size(), 1);
+
+    QAccessibleInterface *view = QAccessible::queryAccessibleInterface(&webView);
+    QTRY_COMPARE_WITH_TIMEOUT(view->child(0)->childCount(), 1, 20000);
+    QAccessibleInterface *document = view->child(0);
+    QAccessibleInterface *table = document->child(0);
+
+    QAccessibleTableInterface *tableInterface = table->tableInterface();
+    QVERIFY(tableInterface);
+
+    // columnDescription should return the column header text
+    QCOMPARE(tableInterface->columnDescription(0), QStringLiteral("Col Alpha"));
+    QCOMPARE(tableInterface->columnDescription(1), QStringLiteral("Col Beta"));
+
+    // rowDescription should return the row header text
+    QCOMPARE(tableInterface->rowDescription(1), QStringLiteral("Row One"));
+}
+
+void tst_Accessibility::actionKeyBindings()
+{
+    QWebEngineView webView;
+    QSignalSpy spyFinished(&webView, &QWebEngineView::loadFinished);
+    webView.setHtml("<html><body>"
+        "<button id='btn1' accesskey='b'>Button</button>"
+        "<input type='checkbox' id='cb1' accesskey='c'>Checkbox</input>"
+        "</body></html>");
+    webView.show();
+    QVERIFY(spyFinished.wait());
+
+    QAccessibleInterface *view = QAccessible::queryAccessibleInterface(&webView);
+    QTRY_COMPARE(view->child(0)->childCount(), 1);
+    QAccessibleInterface *document = view->child(0);
+    QAccessibleInterface *grouping = document->child(0);
+    QVERIFY(grouping->childCount() >= 2);
+
+    // Button: should have pressAction with accesskey shortcut
+    QAccessibleInterface *button = nullptr;
+    QAccessibleInterface *checkbox = nullptr;
+    for (int i = 0; i < grouping->childCount(); ++i) {
+        QAccessibleInterface *child = grouping->child(i);
+        if (child->role() == QAccessible::Button)
+            button = child;
+        else if (child->role() == QAccessible::CheckBox)
+            checkbox = child;
+    }
+    QVERIFY(button);
+    QVERIFY(checkbox);
+
+    QAccessibleActionInterface *btnAction = button->actionInterface();
+    QVERIFY(btnAction);
+    QStringList btnKeys = btnAction->keyBindingsForAction(QAccessibleActionInterface::pressAction());
+    QVERIFY(!btnKeys.isEmpty());
+    QVERIFY(btnKeys.contains(QStringLiteral("b")) || btnKeys.contains(QStringLiteral("Alt+b")));
+
+    // Checkbox: should have toggleAction with accesskey shortcut
+    QAccessibleActionInterface *cbAction = checkbox->actionInterface();
+    QVERIFY(cbAction);
+    QStringList cbKeys = cbAction->keyBindingsForAction(QAccessibleActionInterface::toggleAction());
+    QVERIFY(!cbKeys.isEmpty());
+    QVERIFY(cbKeys.contains(QStringLiteral("c")) || cbKeys.contains(QStringLiteral("Alt+c")));
 }
 
 static QByteArrayList params = QByteArrayList()
