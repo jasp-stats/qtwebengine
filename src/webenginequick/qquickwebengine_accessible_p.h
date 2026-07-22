@@ -69,6 +69,8 @@ public:
 
 private:
     QQuickWebEngineView *engineView() const;
+    QAccessibleTextInterface *textInterface() const;
+    QAccessibleTableCellInterface *cellInterface() const;
 };
 
 QT_END_NAMESPACE
@@ -111,6 +113,7 @@ public:
 
 private:
     QAccessibleInterface *browserAccessible() const;
+    QAccessibleTextInterface *textInterface() const;
     QQuickWebEngineViewAccessible *viewAccessible() const;
     QPointer<QQuickWebEngineView> m_view;
 };
