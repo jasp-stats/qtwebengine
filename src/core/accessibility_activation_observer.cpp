@@ -1,17 +1,13 @@
 // Copyright (C) 2018 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-3.0-only
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 // Qt-Security score:significant reason:default
 
 #include "accessibility_activation_observer.h"
-#include <QDebug>
 
 #include "content/browser/accessibility/browser_accessibility_state_impl.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
-#include "web_contents_adapter.h"
-
-#include <stdio.h>
 
 using namespace Qt::StringLiterals;
 
@@ -36,48 +32,37 @@ bool isAccessibilityEnabled() {
 
 AccessibilityActivationObserver::AccessibilityActivationObserver()
 {
-    qDebug() << "AccessibilityActivationObserver::ctor: isAccessibilityEnabled=" << isAccessibilityEnabled();
     if (isAccessibilityEnabled()) {
-        qDebug() << "AccessibilityActivationObserver::ctor: Installing activation observer";
         QAccessible::installActivationObserver(this);
 
-        qDebug() << "AccessibilityActivationObserver::ctor: Forcing accessibility (active=" << QAccessible::isActive() << ")";
         content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
         scoped_accessibility_mode_ =
             content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
-        qDebug() << "AccessibilityActivationObserver::ctor: Created scoped_accessibility_mode_";
     }
 }
 
 AccessibilityActivationObserver::~AccessibilityActivationObserver()
 {
-    qDebug() << "AccessibilityActivationObserver::~dtor: Removing activation observer";
     QAccessible::removeActivationObserver(this);
 }
 
 void AccessibilityActivationObserver::accessibilityActiveChanged(bool active)
 {
-    qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: active=" << active;
     if (active) {
-        qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Creating scoped_accessibility_mode_";
         scoped_accessibility_mode_ =
             content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
-        qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Created scoped_accessibility_mode_";
 
         // When accessibility is enabled after startup, reload all WebContents pages.
         // This ensures accessibility trees are created with proper accessibility support
         // from the renderer side, and browser-side managers are properly initialized.
         auto webContentsList = content::WebContentsImpl::GetAllWebContents();
-        qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Found" << webContentsList.size() << "web contents";
         for (auto *webContents : webContentsList) {
             if (!webContents->IsBeingDestroyed() && !webContents->IsNeverComposited()) {
-                qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Reloading webContents" << webContents;
                 // Reload the page to trigger proper accessibility initialization
                 webContents->GetController().Reload(content::ReloadType::NORMAL, true);
             }
         }
     } else {
-        qDebug() << "AccessibilityActivationObserver::accessibilityActiveChanged: Resetting scoped_accessibility_mode_";
         scoped_accessibility_mode_.reset();
     }
 }

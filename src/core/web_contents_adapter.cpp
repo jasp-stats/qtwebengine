@@ -80,11 +80,8 @@
 #include "browser_accessibility_qt.h"
 #include "ui/accessibility/platform/browser_accessibility_manager.h"
 #include "content/browser/accessibility/browser_accessibility_state_impl.h"
-#include "ui/accessibility/ax_updates_and_events.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include <QtGui/qaccessible.h>
-#include <QtCore/qdebug.h>
-#include <stdio.h>
 #endif
 
 #if QT_CONFIG(webengine_printing_and_pdf)
@@ -477,69 +474,12 @@ void WebContentsAdapter::initialize(content::SiteInstance *site)
     }
 
 #if QT_CONFIG(accessibility)
-    FILE *log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Starting accessibility setup\n");
-        fflush(log);
-        fclose(log);
-    }
-    
-    // Enable accessibility from platform (simulates qatspi being present)
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Calling SetActivationFromPlatformEnabled(true)\n");
-        fflush(log);
-        fclose(log);
-    }
     content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
-    
-    // Create process-level scoped mode so accessibility is active for all WebContents
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Creating process-level scoped mode for kAXModeComplete\n");
-        fflush(log);
-        fclose(log);
-    }
     m_scopedAccessibilityMode =
         content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForProcess(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
-    
-    // Also create WebContents-level scoped mode for explicit targeting
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Creating WebContents-level scoped mode for kAXModeComplete\n");
-        fflush(log);
-        fclose(log);
-    }
     m_webContentsScopedMode =
         content::BrowserAccessibilityStateImpl::GetInstance()->CreateScopedModeForWebContents(webContents(), ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
-    
-    // Force accessibility mode to be applied immediately to the WebContents,
-    // bypassing ProgressiveAccessibility's hidden check.
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Calling SetAccessibilityMode(ui::kAXModeComplete) on WebContents\n");
-        fflush(log);
-        fclose(log);
-    }
     static_cast<content::WebContentsImpl*>(webContents())->SetAccessibilityMode(ui::kAXModeComplete | ui::AXMode::kScreenReader | ui::AXMode::kHTML);
-    
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] After SetAccessibilityMode, WebContents mode=%s\n",
-            webContents()->GetAccessibilityMode().ToString().c_str());
-        fflush(log);
-        fclose(log);
-    }
-    
-    // Force a load to ensure the renderer receives the accessibility mode before
-    // creating the document. Done via LoadIfNecessary below.
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[initialize] Skipping premature about:blank load\n");
-        fflush(log);
-        fclose(log);
-    }
-    // The LoadIfNecessary() call below will trigger the first navigation properly
 #endif
 
     initializeRenderPrefs();
@@ -1112,99 +1052,23 @@ QAccessibleInterface *WebContentsAdapter::browserAccessible()
 {
     CHECK_INITIALIZED(nullptr);
     content::RenderFrameHostImpl *rfh = static_cast<content::RenderFrameHostImpl *>(m_webContents->GetPrimaryMainFrame());
-    if (!rfh) {
-        qWarning() << "browserAccessible: No RenderFrameHost";
+    if (!rfh)
         return nullptr;
-    }
 
-    // Check if kNativeAPIs mode is enabled
-    FILE *log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] Start - WebContents=%p, mode=%s\n",
-            (void*)webContents(), webContents()->GetAccessibilityMode().ToString().c_str());
-        fflush(log);
-        fclose(log);
-    }
-    
     ui::AXMode mode = webContents()->GetAccessibilityMode();
     if (!(mode.has_mode(ui::AXMode::kNativeAPIs))) {
-        log = fopen("/tmp/browser_accessible.log", "a");
-        if (log) {
-            fprintf(log, "[browserAccessible] kNativeAPIs NOT enabled, enabling it\n");
-            fflush(log);
-            fclose(log);
-        }
-        // Enable accessibility from platform if not already enabled
         content::BrowserAccessibilityStateImpl::GetInstance()->SetActivationFromPlatformEnabled(true);
-        mode = webContents()->GetAccessibilityMode();
-        log = fopen("/tmp/browser_accessible.log", "a");
-        if (log) {
-            fprintf(log, "[browserAccessible] After SetActivationFromPlatformEnabled, mode=%s\n",
-                mode.ToString().c_str());
-            fflush(log);
-            fclose(log);
-        }
-        // Reload to get accessibility enabled
-        log = fopen("/tmp/browser_accessible.log", "a");
-        if (log) {
-            fprintf(log, "[browserAccessible] Issuing reload to enable accessibility\n");
-            fflush(log);
-            fclose(log);
-        }
         m_webContents->GetController().Reload(content::ReloadType::NORMAL, true);
         return nullptr;
     }
 
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] kNativeAPIs IS enabled\n");
-        fflush(log);
-        fclose(log);
-    }
-
     ui::BrowserAccessibilityManager *manager = rfh->GetOrCreateBrowserAccessibilityManager();
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] GetOrCreateBrowserAccessibilityManager returned %s\n",
-            manager ? "non-null" : "null");
-        fflush(log);
-        fclose(log);
-    }
-    if (!manager) {
-        qWarning() << "browserAccessible: No BrowserAccessibilityManager";
+    if (!manager)
         return nullptr;
-    }
     ui::BrowserAccessibility *acc = manager->GetFromAXNode(manager->GetRoot());
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] GetFromAXNode(GetRoot()) returned %s, root id=%d\n",
-            acc ? "non-null" : "null", manager->GetRoot() ? manager->GetRoot()->id() : -1);
-        fflush(log);
-        fclose(log);
-    }
-    if (!acc) {
-        qWarning() << "browserAccessible: No BrowserAccessibility from GetFromAXNode(GetRoot())";
+    if (!acc)
         return nullptr;
-    }
 
-    // Check PlatformChildCount - if 0, the initial tree may be sparse. With
-    // kScreenReader mode enabled, the renderer will send AXTree updates when
-    // dynamic content loads. kChildrenChanged events handle this in FireBlinkEvent.
-    int childCount = acc->PlatformChildCount();
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] BrowserAccessibility root childCount=%d, role=%d\n",
-            childCount, (int)acc->GetRole());
-        fflush(log);
-        fclose(log);
-    }
-
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[browserAccessible] Returning QAccessibleInterface (childCount=%d)\n", childCount);
-        fflush(log);
-        fclose(log);
-    }
     return ui::toQAccessibleInterface(acc);
 }
 

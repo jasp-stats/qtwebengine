@@ -31,18 +31,12 @@ BrowserAccessibilityManager::Create(const ui::AXTreeUpdate &initialTree,
     QtWebEngineCore::WebContentsAccessibilityQt *access = nullptr;
     access = static_cast<QtWebEngineCore::WebContentsAccessibilityQt *>(delegate->AccessibilityGetWebContentsAccessibility());
 
-    qDebug() << "BrowserAccessibilityManager::Create: Called";
-    qDebug() << "BrowserAccessibilityManager::Create: access=" << (access ? "non-null" : "null");
-    
     // Accessibility is not supported for guest views and child frames.
     if (!access) {
-        qDebug() << "BrowserAccessibilityManager::Create: No access, returning nullptr";
         return nullptr;
     }
 
-    BrowserAccessibilityManager *manager = new BrowserAccessibilityManagerQt(access, initialTree, nodeDelegate, delegate);
-    qDebug() << "BrowserAccessibilityManager::Create: Created manager=" << manager;
-    return manager;
+    return new BrowserAccessibilityManagerQt(access, initialTree, nodeDelegate, delegate);
 #else
     Q_UNUSED(initialTree);
     Q_UNUSED(delegate);
@@ -73,33 +67,8 @@ BrowserAccessibilityManagerQt::BrowserAccessibilityManagerQt(
     : BrowserAccessibilityManager(nodeDelegate, delegate)
     , m_webContentsAccessibility(webContentsAccessibility)
 {
-    FILE *log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[BrowserAccessibilityManagerQt::ctor] Creating manager, initialTree.root_id=%d, node_count=%zu\n",
-            initialTree.root_id, initialTree.nodes.size());
-        fprintf(log, "[BrowserAccessibilityManagerQt::ctor] accessibilityParentObject=%p\n",
-            (void*)webContentsAccessibility->accessibilityParentObject());
-        fflush(log);
-        fclose(log);
-    }
     Initialize(initialTree);
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[BrowserAccessibilityManagerQt::ctor] After Initialize, root node has %lu children\n",
-            GetRoot() ? GetRoot()->GetChildCount() : 0);
-        fprintf(log, "[BrowserAccessibilityManagerQt::ctor] Manager valid=%d\n", m_valid);
-        fflush(log);
-        fclose(log);
-    }
     m_valid = true; // BrowserAccessibilityQt can start using the AXTree
-    
-    log = fopen("/tmp/browser_accessible.log", "a");
-    if (log) {
-        fprintf(log, "[BrowserAccessibilityManagerQt::ctor] After Initialize, root node has %lu children\n",
-            GetRoot() ? GetRoot()->GetChildCount() : 0);
-        fflush(log);
-        fclose(log);
-    }
 }
 
 BrowserAccessibilityManagerQt::~BrowserAccessibilityManagerQt()
