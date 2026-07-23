@@ -940,6 +940,8 @@ void QQuickWebEngineViewPrivate::visibleChanged(bool visible)
 	Q_UNUSED(visible);
 #if QT_CONFIG(accessibility)
 	Q_Q(QQuickWebEngineView);
+	if (!q || !q->isComponentComplete() || QtWebEngineCore::closingDown())
+		return;
 	QAccessible::State changedState;
 	changedState.invisible = true;
 	QAccessibleStateChangeEvent event(q, changedState);
