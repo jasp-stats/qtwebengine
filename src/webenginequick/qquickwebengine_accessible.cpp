@@ -77,10 +77,12 @@ QAccessible::Role QQuickWebEngineViewAccessible::role() const
 
 QAccessible::State QQuickWebEngineViewAccessible::state() const
 {
-    QAccessible::State s;
-    if (engineView() && engineView()->hasFocus())
-        s.focused = true;
-    return s;
+	QAccessible::State s;
+	if (engineView() && engineView()->hasFocus())
+		s.focused = true;
+	if (engineView() && !engineView()->isVisible())
+		s.invisible = true;
+	return s;
 }
 
 void *QQuickWebEngineViewAccessible::interface_cast(QAccessible::InterfaceType t)
@@ -325,9 +327,13 @@ QAccessible::Role RenderWidgetHostViewQtDelegateQuickAccessible::role() const
 
 QAccessible::State RenderWidgetHostViewQtDelegateQuickAccessible::state() const
 {
-    if (auto browserAcc = browserAccessible())
-        return browserAcc->state();
-    return QAccessible::State();
+	if (auto browserAcc = browserAccessible()) {
+		QAccessible::State s = browserAcc->state();
+		if (m_view && !m_view->isVisible())
+			s.invisible = true;
+		return s;
+	}
+	return QAccessible::State();
 }
 
 void *RenderWidgetHostViewQtDelegateQuickAccessible::interface_cast(QAccessible::InterfaceType t)

@@ -937,7 +937,12 @@ void QQuickWebEngineViewPrivate::recommendedStateChanged(LifecycleState state)
 
 void QQuickWebEngineViewPrivate::visibleChanged(bool visible)
 {
-    Q_UNUSED(visible);
+	Q_UNUSED(visible);
+#if QT_CONFIG(accessibility)
+	Q_Q(QQuickWebEngineView);
+	QAccessibleStateChangeEvent event(q, QAccessible::State::invisible);
+	QAccessible::updateAccessibility(&event);
+#endif
 }
 
 class WebContentsAdapterOwner : public QObject
